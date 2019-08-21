@@ -1,6 +1,9 @@
 context("Hyperband")
 
 test_that("test if object hyperband works", {
+  
+  # load helper functions/objects
+  source("helper_zzz.R", local = TRUE)
 
   capture_output({hyperhyper = hyperband(
     problem = braninProb,

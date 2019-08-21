@@ -1,9 +1,10 @@
 Package: hyperbandr
-Title: What the Package Does (one line, title case)
+Title: General implementation of the hyperband algorithm
 Version: 0.1
 Authors@R: c(
     person("Niklas", "Klein", email = "Niklas.Klein@posteo.de", role = c("aut", "cre")),
-    person("Janek", "Thomas", email = "janek.thomas@stat.uni-muenchen.de", role = "aut", comment = c(ORCID = "0000-0003-4511-6245")))
+    person("Janek", "Thomas", email = "janek.thomas@stat.uni-muenchen.de", role = "aut", comment = c(ORCID = "0000-0003-4511-6245")),
+    person("Sebastian", "Gruber", email = "gruber_sebastian@t-online.de", role = "aut", comment = c(ORCID = "0000-0002-8544-3470")))
 Description: Generic and extendable implementation of the hyperband optimization algorithm in 'R6'.
     Can be easily used to tune hyperparameters of deep neural networks and other machine learning algorithms.
     Builds upon the 'ParamHelpers' for definition of optimization ranges and dependencies.

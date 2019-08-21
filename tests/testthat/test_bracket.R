@@ -1,6 +1,10 @@
 context("Bracket")
 
 test_that("test if object bracket works", {
+  
+  # load helper functions/objects
+  source("helper_zzz.R", local = TRUE)
+  
   brack = bracket$new(
     problem = braninProb,
     max.perf = FALSE,

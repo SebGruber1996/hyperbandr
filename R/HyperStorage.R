@@ -4,7 +4,7 @@
 #' @description
 #' An \code{\link[R6]{R6Class}} to concatenate the results from each bracket object, automatically created 
 #' when the hyperband algorithm is called. Can be used to improve the configuration sample mechanism (e.g. MBO).
-#' Check the vignette for a detailed exampled.
+#' Check the vignette for a detailed example.
 #' 
 #' @field par.set [\code{string}]\cr
 #' The config space

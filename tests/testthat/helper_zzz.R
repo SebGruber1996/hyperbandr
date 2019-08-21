@@ -7,7 +7,8 @@ param.set = getParamSet(braninProb)
 #######################################
 # config space
 configSpace = makeParamSet(
-    makeNumericParam(id = "x1", lower = -5, upper = 10.1))
+    makeNumericParam(id = "x1", lower = -5, upper = 10.1)
+)
 # sample fun
 sample.fun = function(par.set, n.configs, ...) {
   sampleValues(par = par.set, n = n.configs)

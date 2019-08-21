@@ -1,6 +1,10 @@
 context("Algorithm")
 
 test_that("test if object algorithm works", {
+  
+  # load helper functions/objects
+  source("helper_zzz.R", local = TRUE)
+  
   obj = algorithm$new(
     problem = braninProb,
     id = "branin",
