@@ -4,8 +4,6 @@
 
 # main packages
 library("devtools")
-library("mlr") # as of april 2018, you need to install the mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
-library("mxnet") 
 # helper packages
 library("ggplot2")
 library("data.table")
@@ -67,20 +65,30 @@ sample.fun = function(par.set, n.configs, ...) {
 
 # init fun
 init.fun = function(r, config, problem) {
-  lrn = makeLearner("classif.mxff",
-    # LeNet architecture: http://deeplearning.net/tutorial/lenet.html 
-    layers = 3, 
-    conv.layer1 = TRUE, conv.layer2 = TRUE,
-    conv.data.shape = c(28, 28),
-    num.layer1 = 8, num.layer2 = 16, num.layer3 = 120,
-    conv.kernel1 = c(3,3), conv.stride1 = c(1,1), pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
-    conv.kernel2 = c(3,3), conv.stride2 = c(1,1), pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
-    array.batch.size = 200,
-    begin.round = 1, num.round = r, 
-    ctx = mx.gpu(),
-    par.vals = config)
-  mod = train(learner = lrn, task = problem$data, subset = problem$train)
-  return(mod)
+  ######## WIP ###################
+  # create keras model
+  model = keras_model_sequential() %>%
+    layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu", input_shape = c(28, 28, 1)) %>%
+    layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+    layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>%
+    layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+    layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>% 
+    layer_flatten() %>%
+    layer_dense(units = 64, activation = "relu") %>%
+    layer_dense(units = 10, activation = "softmax")
+
+  #Compile the model using the 'rmsprop' optimizer,  'categorical_crossentropy' loss and the 'accuracy' metric.
+  compile(model, optimizer = optimizer_rmsprop(), loss = loss_categorical_crossentropy, metrics = "accuracy")
+  
+  #Train the model using fit() for 5 epochs with a batch_size of 64
+  history = fit(
+    model,
+    x = train_images,
+    y = train_labels,
+    batch_size = 64,
+    epochs = 5
+  )
+  return(model)
 }
 
 # train fun

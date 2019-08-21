@@ -31,22 +31,31 @@ The project is not yet finished but can already be used on your own problems and
 ############## packages ###############
 #######################################
 
-library("R6")
-library("devtools")
-load_all()
-library("keras")
+#library("R6")
+#library("devtools")
+#load_all()
+#library("keras")
 library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
 library("ggplot2")
 library("gridExtra")
-library("dplyr")
-library("data.table")
+#library("dplyr")
+#library("data.table")
 
 ####################################
 ## define the problem to optimize ##
 ####################################
 
-# read mini mnist (1/10 of actual mnist for faster evaluation, evenly distributed classes)
-load(file = "data/mnist.rda")
+# load mini mnist (1/10 of actual mnist for faster evaluation, evenly distributed classes)
+#load(file = "data/mnist.rda")
+# load german credit data (docs state custom cost function should be used,
+# but is skipped here due to simplicity... maybe add later?)
+load(file = "data/german.rda")
+# create dummy encodings for factor variables
+is_factor = which(sapply(german[-ncol(german)], is.factor))
+german = createDummyFeatures(
+  german, target = "label",
+  cols = names(german[is_factor])
+)
 ```
 
 ----
@@ -59,18 +68,18 @@ To this, we use [mxnet](https://github.com/apache/incubator-mxnet/tree/master/R-
 
 ```{r, echo = FALSE}
 
-set.seed(123)
+#set.seed(123)
 
-plots = 64
-visualize_this = sample(dim(mnist)[2], plots)
-par(mfrow = c(8, plots/8), cex = 0.05)
+#plots = 64
+#visualize_this = sample(dim(mnist)[2], plots)
+#par(mfrow = c(8, plots/8), cex = 0.05)
 
-for(i in 1:plots){
-  train_vis = mnist[visualize_this[i], 1:784]
-  train_mat = matrix(as.numeric(train_vis), nrow = 28, ncol = 28, byrow = TRUE)
-  train_mat = apply(train_mat, 2 , rev)
-  image(t(train_mat), axes = FALSE, col = grey(seq(from = 0, to = 1, length = 255)))
-}
+#for(i in 1:plots){
+#  train_vis = mnist[visualize_this[i], 1:784]
+#  train_mat = matrix(as.numeric(train_vis), nrow = 28, ncol = 28, byrow = TRUE)
+#  train_mat = apply(train_mat, 2 , rev)
+#  image(t(train_mat), axes = FALSE, col = grey(seq(from = 0, to = 1, length = 255)))
+#}
 
 ```
 
@@ -82,16 +91,16 @@ For convenience, we only use 1/10 of the original data.
 
 ```{r, echo = TRUE}
 # We sample 2/3 of our data for training
-train.set = sample(nrow(mnist), size = (2/3)*nrow(mnist))
+train.set = sample(nrow(german), size = floor(2/3 * nrow(german)))
 
 # Another 1/6 will be used for validation during training
-val.set = sample(setdiff(1:nrow(mnist), train.set), 1000)
+val.set = sample(setdiff(1:nrow(german), train.set), size = floor(1/6 * nrow(german)))
 
 # The remaining 1/6 will be stored for testing
-test.set = setdiff(1:nrow(mnist), c(train.set, val.set))
+test.set = setdiff(1:nrow(german), c(train.set, val.set))
 
 # Since we use mlr, we define a classification task to encapsulate the data
-task = makeClassifTask(data = mnist, target = "label")
+task = makeClassifTask(data = german, target = "label")
 
 # Finally, we define the problem list
 problem = list(data = task, train = train.set, val = val.set, test = test.set)
@@ -107,17 +116,26 @@ The ParamHelpers package provides an easy way to construct the latter one.
 ```{r, echo = TRUE, comment = NA}
 library("ParamHelpers")
 configSpace = makeParamSet(
-  makeDiscreteParam(id = "optimizer", values = c("sgd", "rmsprop", "adam", "adagrad")),
-  makeNumericParam(id = "learning.rate", lower = 0.001, upper = 0.1),
-  makeNumericParam(id = "wd", lower = 0, upper = 0.01),
-  makeNumericParam(id = "dropout.input", lower = 0, upper = 0.6),
-  makeNumericParam(id = "dropout.layer1", lower = 0, upper = 0.6),
-  makeNumericParam(id = "dropout.layer2", lower = 0, upper = 0.6),
-  makeNumericParam(id = "dropout.layer3", lower = 0, upper = 0.6),
-  makeLogicalParam(id = "batch.normalization1"),
-  makeLogicalParam(id = "batch.normalization2"),
-  makeLogicalParam(id = "batch.normalization3")
+  makeDiscreteParam(id = "booster",        values = c("gbtree", "gblinear", "dart")),
+  makeDiscreteParam(id = "sample_type",    values = c("uniform", "weighted")),
+  makeDiscreteParam(id = "normalize_type", values = c("tree", "forest")),
+  makeIntegerParam( id = "max_depth",              lower = 1, upper = 100),
+  makeIntegerParam( id = "num_parallel_tree",      lower = 1, upper = 100),
+  makeNumericParam( id = "eta",                    lower = 0, upper = 1),
+  makeNumericParam( id = "gamma",                  lower = 0, upper = 100),
+  makeNumericParam( id = "min_child_weight",       lower = 0, upper = 100),
+  makeNumericParam( id = "subsample",              lower = 0, upper = 1),
+  makeNumericParam( id = "colsample_bytree",       lower = 0, upper = 1),
+  makeNumericParam( id = "colsample_bylevel",      lower = 0, upper = 1),
+  makeNumericParam( id = "lambda",                 lower = 0, upper = 100),
+  makeNumericParam( id = "lambda_bias",            lower = 0, upper = 100),
+  makeNumericParam( id = "alpha",                  lower = 0, upper = 100),
+  makeNumericParam( id = "max_delta_step",         lower = 0, upper = 100),
+  makeNumericParam( id = "tweedie_variance_power", lower = 1, upper = 2),
+  makeNumericParam( id = "rate_drop",              lower = 0, upper = 1),
+  makeNumericParam( id = "skip_drop",              lower = 0, upper = 1)
 )
+
 ```
 
 \vspace{10pt}
@@ -141,22 +159,9 @@ sample.fun = function(par.set, n.configs, ...) {
 
 ```{r, echo = TRUE}
 init.fun = function(r, config, problem) {
-  lrn = makeLearner("classif.mxff",
-    # you may have to install mxnet gpu, else just set ctx = mx.cpu()
-    ctx = mx.gpu(),
-    # we define a small CNN architecture with two conv and two dense layers
-    # (the second dense layer is our output and will be created automatically by mlr)
-    layers = 3, 
-    conv.layer1 = TRUE, conv.layer2 = TRUE,
-    conv.data.shape = c(28, 28),
-    num.layer1 = 8, num.layer2 = 16, num.layer3 = 64,
-    conv.kernel1 = c(3,3), conv.stride1 = c(1,1), 
-    pool.kernel1 = c(2,2), pool.stride1 = c(2,2),
-    conv.kernel2 = c(3,3), conv.stride2 = c(1,1), 
-    pool.kernel2 = c(2,2), pool.stride2 = c(2,2),           
-    array.batch.size = 128,
+  lrn = makeLearner("classif.xgboost",
     # we initialize our model with r iterations
-    begin.round = 1, num.round = r,
+    nrounds = r,
     # here we allocate the configuration from our sample function
     par.vals = config
   )
@@ -176,15 +181,12 @@ We're planning to add training from scratch as well. That might be necessary if 
 ```{r, echo = TRUE}
 train.fun = function(mod, budget, problem) {
   # we create a new learner and assign all parameters from our model
-  lrn = makeLearner("classif.mxff", ctx = mx.gpu(), par.vals = mod$learner$par.vals)
-  lrn = setHyperPars(lrn,
-    # in addition, we have to extract the weights and feed them into our new model 
-    symbol = mod$learner.model$symbol,
-    arg.params = mod$learner.model$arg.params,
-    aux.params = mod$learner.model$aux.params,
-    begin.round = mod$learner$par.vals$begin.round + mod$learner$par.vals$num.round,
-    num.round = budget
-  )
+  lrn = makeLearner("classif.xgboost", par.vals = mod$learner$par.vals)
+#  lrn = setHyperPars(lrn,
+#    # in addition, we have to extract the weights and feed them into our new model 
+#    par.vals = mod$learner.model$par.vals,
+#    nrounds = budget
+#  )
   mod = train(learner = lrn, task = problem$data, subset = problem$train)
   return(mod)
 }
@@ -207,17 +209,18 @@ performance.fun = function(model, problem) {
 
 \vspace{10pt}
 
-Now we can call hyperband (with these hyperparameters, one run needs like 5 minutes on a GTX 1070):
+Now we can call hyperband (with these hyperparameters, one run needs like _ minutes):
 
 \vspace{10pt}
 
-```{r, echo = TRUE, eval = TRUE}
+```{r, echo = TRUE, eval = TRUE, warning = FALSE}
+library("hyperbandr")
 hyperhyper = hyperband(
   problem = problem,
   max.resources = 81, 
   prop.discard = 3,
   max.perf = TRUE,
-  id = "nnet", 
+  id = "xgb", 
   par.set = configSpace, 
   sample.fun =  sample.fun,
   init.fun = init.fun,
