@@ -31,25 +31,18 @@ The project is not yet finished but can already be used on your own problems and
 ############## packages ###############
 #######################################
 
-#library("R6")
-#library("devtools")
-#load_all()
-#library("keras")
-library("mlr") # you might need to install mxnet branch of mlr: devtools::install_github("mlr-org/mlr", ref = "mxnet")
+library("mlr3") 
 library("ggplot2")
 library("gridExtra")
-#library("dplyr")
-#library("data.table")
 
 ####################################
 ## define the problem to optimize ##
 ####################################
 
-# load mini mnist (1/10 of actual mnist for faster evaluation, evenly distributed classes)
-#load(file = "data/mnist.rda")
 # load german credit data (docs state custom cost function should be used,
 # but is skipped here due to simplicity... maybe add later?)
-load(file = "data/german.rda")
+task = mlr_tasks$get("german_data")
+
 # create dummy encodings for factor variables
 is_factor = which(sapply(german[-ncol(german)], is.factor))
 german = createDummyFeatures(
@@ -114,27 +107,36 @@ The ParamHelpers package provides an easy way to construct the latter one.
 \vspace{10pt}
 
 ```{r, echo = TRUE, comment = NA}
-library("ParamHelpers")
-configSpace = makeParamSet(
-  makeDiscreteParam(id = "booster",        values = c("gbtree", "gblinear", "dart")),
-  makeDiscreteParam(id = "sample_type",    values = c("uniform", "weighted")),
-  makeDiscreteParam(id = "normalize_type", values = c("tree", "forest")),
-  makeIntegerParam( id = "max_depth",              lower = 1, upper = 100),
-  makeIntegerParam( id = "num_parallel_tree",      lower = 1, upper = 100),
-  makeNumericParam( id = "eta",                    lower = 0, upper = 1),
-  makeNumericParam( id = "gamma",                  lower = 0, upper = 100),
-  makeNumericParam( id = "min_child_weight",       lower = 0, upper = 100),
-  makeNumericParam( id = "subsample",              lower = 0, upper = 1),
-  makeNumericParam( id = "colsample_bytree",       lower = 0, upper = 1),
-  makeNumericParam( id = "colsample_bylevel",      lower = 0, upper = 1),
-  makeNumericParam( id = "lambda",                 lower = 0, upper = 100),
-  makeNumericParam( id = "lambda_bias",            lower = 0, upper = 100),
-  makeNumericParam( id = "alpha",                  lower = 0, upper = 100),
-  makeNumericParam( id = "max_delta_step",         lower = 0, upper = 100),
-  makeNumericParam( id = "tweedie_variance_power", lower = 1, upper = 2),
-  makeNumericParam( id = "rate_drop",              lower = 0, upper = 1),
-  makeNumericParam( id = "skip_drop",              lower = 0, upper = 1)
-)
+
+library(paradox)
+tune_ps = ParamSet$new(list(
+  ParamDbl$new("cp", lower = 0.001, upper = 0.1),
+  ParamInt$new("minsplit", lower = 1, upper = 10)
+))
+
+
+# replace with paradox
+#library("ParamHelpers")
+#configSpace = makeParamSet(
+#  makeDiscreteParam(id = "booster",        values = c("gbtree", "gblinear", "dart")),
+#  makeDiscreteParam(id = "sample_type",    values = c("uniform", "weighted")),
+#  makeDiscreteParam(id = "normalize_type", values = c("tree", "forest")),
+#  makeIntegerParam( id = "max_depth",              lower = 1, upper = 100),
+#  makeIntegerParam( id = "num_parallel_tree",      lower = 1, upper = 100),
+#  makeNumericParam( id = "eta",                    lower = 0, upper = 1),
+#  makeNumericParam( id = "gamma",                  lower = 0, upper = 100),
+#  makeNumericParam( id = "min_child_weight",       lower = 0, upper = 100),
+#  makeNumericParam( id = "subsample",              lower = 0, upper = 1),
+#  makeNumericParam( id = "colsample_bytree",       lower = 0, upper = 1),
+#  makeNumericParam( id = "colsample_bylevel",      lower = 0, upper = 1),
+#  makeNumericParam( id = "lambda",                 lower = 0, upper = 100),
+#  makeNumericParam( id = "lambda_bias",            lower = 0, upper = 100),
+#  makeNumericParam( id = "alpha",                  lower = 0, upper = 100),
+#  makeNumericParam( id = "max_delta_step",         lower = 0, upper = 100),
+#  makeNumericParam( id = "tweedie_variance_power", lower = 1, upper = 2),
+#  makeNumericParam( id = "rate_drop",              lower = 0, upper = 1),
+#  makeNumericParam( id = "skip_drop",              lower = 0, upper = 1)
+#)
 
 ```
 
